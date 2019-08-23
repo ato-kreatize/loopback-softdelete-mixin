@@ -21,15 +21,14 @@ export default (Model, { deletedAt = 'deletedAt', scrub = false , index = false,
     scrubbed = propertiesToScrub.reduce((obj, prop) => ({ ...obj, [prop]: null }), {});
   }
 
-  Model.defineProperty(deletedAt, {type: Date, required: false, default: null});
   if (index) Model.defineProperty('deleteIndex', { type: String, required: true, default: 'null' });
   if (deletedById) Model.defineProperty('deletedById', { type: Number, required: false, default: null });
   if (deleteOp) Model.defineProperty('deleteOp', { type: String, required: false, default: null });
 
   Model.destroyAll = function softDestroyAll(where, cb) {
     var deletePromise = index ? Model.updateAll(where, { ...scrubbed, [deletedAt]: new Date(), deleteIndex: genKey() }) :
-      Model.updateAll(where, { ...scrubbed, [deletedAt]: new Date() })
-    
+      Model.updateAll(where, { ...scrubbed, [deletedAt]: new Date() });
+
     return deletePromise
       .then(result => (typeof cb === 'function') ? cb(null, result) : result)
       .catch(error => (typeof cb === 'function') ? cb(error) : Promise.reject(error));
@@ -53,15 +52,15 @@ export default (Model, { deletedAt = 'deletedAt', scrub = false , index = false,
   Model.prototype.destroy = function softDestroy(options, cb) {
     const callback = (cb === undefined && typeof options === 'function') ? options : cb;
     let data = {
-      ...scrubbed, 
-      [deletedAt]: new Date()
+      ...scrubbed,
+      [deletedAt]: new Date(),
     };
     options = options || {};
     options.delete = true;
     if (index) data.deleteIndex = genKey();
     if (deletedById && options.deletedById) data.deletedById = options.deletedById;
     if (deleteOp && options.deleteOp) data.deleteOp = options.deleteOp;
-    
+
     return this.updateAttributes(data, options)
       .then(result => (typeof cb === 'function') ? callback(null, result) : result)
       .catch(error => (typeof cb === 'function') ? callback(error) : Promise.reject(error));
